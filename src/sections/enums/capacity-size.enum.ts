@@ -1,0 +1,15 @@
+export enum SizeValue {
+    XS          = 'XS',
+    S           = 'S',
+    M           = 'M',
+    MS          = 'MS',
+    L           = 'L',
+    LABPCA      = 'LABPCA',
+    AUDITORIO   = 'AUDITORIO',
+    CORE        = 'CORE',
+    LABRED      = 'LABRED',
+    DIS         = 'DIS',
+    LABCB       = 'LABCB',
+    LABCC       = 'LABCC',
+    LABPROC     = 'LABPROC',
+}
