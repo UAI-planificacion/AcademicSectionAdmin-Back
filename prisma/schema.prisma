@@ -1,0 +1,196 @@
+generator client {
+    provider = "prisma-client-js"
+    // output   = "../generated/prisma"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+
+enum DayName {
+    Lunes
+    Martes
+    Miercoles
+    Jueves
+    Viernes
+    Sabado
+    Domingo
+}
+
+
+model Day {
+    code        String @id
+    name        DayName @unique
+    shortName   String?
+    mediumName  String?
+
+    dayModules DayModule[]
+
+    @@index([name])
+}
+
+
+model Module {
+    id          String @id @default(uuid())
+    code        String
+    name        String
+    startHour   String
+    endHour     String
+    isActive    Boolean @default(true)
+
+    dayModules  DayModule[]
+    sections    Section[]
+
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([name])
+}
+
+
+model DayModule {
+    dayCode   String
+    moduleId  String
+
+    day       Day    @relation(fields: [dayCode], references: [code])
+    module    Module @relation(fields: [moduleId], references: [id])
+
+    @@id([dayCode, moduleId])
+}
+
+
+model Subject {
+    id          String @id @default(uuid())
+    name        String @unique
+    code        String @unique
+    startDate   DateTime
+    endDate     DateTime?
+
+    sections    Section[]
+
+    periodId    String
+    period      Period @relation(fields: [periodId], references: [id])
+
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([name, code])
+}
+
+
+enum PeriodStatus {
+    InProgress
+    Closed
+}
+
+
+model Period {
+    id          String @id @default(uuid())
+    name        String
+    startDate   DateTime?
+    endDate     DateTime?
+    openingDate DateTime?
+    closingDate DateTime?
+    status      PeriodStatus @default(InProgress)
+
+    subjects    Subject[]
+
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([name])
+}
+
+
+model Professor {
+    id          String @id
+    name        String
+    email       String? @unique
+
+    sections    Section[]
+
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([name])
+}
+
+enum SizeValue {
+    XS
+    S
+    MS
+    M
+    L
+    LABPCA
+    AUDITORIO
+
+    CORE
+    LABRED
+    DIS
+    LABCB
+    LABCC
+    LABPROC
+}
+
+
+model Size {
+    id      SizeValue @id
+    label   String
+    isRoom  Boolean @default(false)
+
+    rooms   Room[]
+}
+
+
+model Room {
+    id          String @id @default(uuid())
+    name        String @unique
+    building    String
+    capacity    Int
+
+    sizeId      SizeValue
+    size        Size @relation(fields: [sizeId], references: [id])
+
+    sections    Section[]
+
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([name])
+}
+
+
+model Section {
+    id                      String @id @default(uuid())
+    code                    String
+    number                  Int
+    session                 String
+
+    size                    SizeValue
+    talla                   SizeValue
+
+    correctedRegistrants    Int
+    realRegistrants         Int
+
+    plannedBuilding         String
+    chairsAvailable         Int?
+
+    roomId                  String
+    room                    Room @relation(fields: [roomId], references: [id])
+
+    moduleId                String
+    module                  Module @relation(fields: [moduleId], references: [id])
+
+    subjectId               String
+    subject                 Subject @relation(fields: [subjectId], references: [id])
+
+    professorId             String
+    professor               Professor @relation(fields: [professorId], references: [id])
+
+    createdAt               DateTime @default(now())
+    updatedAt               DateTime @updatedAt
+
+    @@index([code])
+}
