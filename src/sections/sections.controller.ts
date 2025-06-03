@@ -1,11 +1,29 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiResponse } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { Express } from 'express';
-import { SectionsService } from './sections.service';
-import { CreateSectionDto } from './dto/create-section.dto';
-import { UpdateSectionDto } from './dto/update-section.dto';
-import { ProcessedSectionDto } from './dto/processed-section.dto';
+
+import {
+    Controller,
+    Get,
+    Post,
+    Body,
+    Patch,
+    Param,
+    Delete,
+    UseInterceptors,
+    UploadedFile
+}                           from '@nestjs/common';
+import {
+    ApiTags,
+    ApiOperation,
+    ApiConsumes,
+    ApiBody,
+    ApiResponse
+}                           from '@nestjs/swagger';
+import { FileInterceptor }  from '@nestjs/platform-express';
+
+import { SectionsService }      from '@sections/sections.service';
+import { CreateSectionDto }     from '@sections/dto/create-section.dto';
+import { UpdateSectionDto }     from '@sections/dto/update-section.dto';
+import { ProcessedSectionDto }  from '@sections/dto/processed-section.dto';
 
 @ApiTags('sections')
 @Controller('sections')
@@ -19,6 +37,7 @@ export class SectionsController {
     create(@Body() createSectionDto: CreateSectionDto) {
         return this.sectionsService.create(createSectionDto);
     }
+
 
     @Post('upload-excel')
     @ApiOperation({ summary: 'Upload and process Excel file with section data' })
@@ -43,11 +62,9 @@ export class SectionsController {
     @ApiResponse({ status: 400, description: 'Bad Request or invalid file format' })
     @UseInterceptors(FileInterceptor('file'))
     async uploadExcelFile(@UploadedFile() file: Express.Multer.File): Promise<ProcessedSectionDto[]> {
-        if (!file) {
-            throw new BadRequestException('No file uploaded');
-        }
-        return this.sectionsService.processExcelFile(file);
+        return this.sectionsService.processExcelFile( file );
     }
+
 
     @Get()
     @ApiOperation({ summary: 'Get all sections' })
@@ -55,6 +72,7 @@ export class SectionsController {
     findAll() {
         return this.sectionsService.findAll();
     }
+
 
     @Get(':id')
     @ApiOperation({ summary: 'Get a section by id' })
