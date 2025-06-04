@@ -247,7 +247,7 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
                 uniqueSectionsMap.set( sectionId, {
                     id: sectionId,
                     code: row['Sec.'],
-                    session: row.TipoSesion,
+                    session: row.Tipo,
                     size: row.Modulo,
                     talla: row.Talla,
                     correctedRegistrants: row.Inscritos,
