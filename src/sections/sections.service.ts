@@ -7,12 +7,15 @@ import {
     PeriodData,
     ProfessorData,
     RoomData,
+    SectionData,
     SubjectData
 }                               from '@sections/models/data.model';
 import { CreateSectionDto }     from '@sections/dto/create-section.dto';
 import { UpdateSectionDto }     from '@sections/dto/update-section.dto';
 import { ProcessedSectionDto }  from '@sections/dto/processed-section.dto';
 import { SizeValue }            from '@sections/enums/capacity-size.enum';
+import { SpaceType }            from '@sections/enums/space-type.enum';
+import { Building }             from '@sections/enums/building.enum';
 
 
 @Injectable()
@@ -89,13 +92,58 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
 
     #getCapacity( capacity: number ): $Enums.SizeValue {
         if ( capacity < 30 )    return SizeValue.XS as $Enums.SizeValue;
-        if ( capacity < 40 )    return SizeValue.S as $Enums.SizeValue;
+        if ( capacity < 40 )    return SizeValue.S  as $Enums.SizeValue;
         if ( capacity < 50 )    return SizeValue.MS as $Enums.SizeValue;
-        if ( capacity < 60 )    return SizeValue.M as $Enums.SizeValue;
-        if ( capacity < 100 )   return SizeValue.L as $Enums.SizeValue;
-        if ( capacity >= 100 )  return SizeValue.LABPCA as $Enums.SizeValue;
+        if ( capacity < 60 )    return SizeValue.M  as $Enums.SizeValue;
+        if ( capacity < 70 )    return SizeValue.L  as $Enums.SizeValue;
 
-        return SizeValue.AUDITORIO as $Enums.SizeValue;
+        return SizeValue.XL as $Enums.SizeValue;
+    }
+
+
+    #getSpaceType( name: string ): $Enums.RoomType {
+        if ( name.includes('LAB') ) {
+            return SpaceType.LABBIO;
+        }
+
+        if ( name.includes('AUD') ) {
+            return SpaceType.AUDITORIO;
+        }
+
+        if ( name.includes('LABINF') ) {
+            return SpaceType.LABINF;
+        }
+
+        if ( name.includes('LABPROC') ) {
+            return SpaceType.LABPROC;
+        }
+
+        return SpaceType.ROOM;
+    }
+
+
+    #getBuilding( name: string ): Building {
+        const space = [
+            'GARAGE EXTRAPROG.',
+            'Lab. Bioingeniería',
+            'Lab. Ingenieria y Ciencias',
+            'Lab. Física',
+            'Lab. Informática',
+            'Lab. Procesos Industriales'
+        ];
+
+        const buildingList = [
+            Building.B,
+            Building.F,
+            Building.F,
+            Building.F,
+            Building.F,
+            Building.E
+        ];
+
+        if ( space.includes( name )) return buildingList[ space.indexOf( name )];
+
+        return ( name.split('-')[1]?.[0]?.toUpperCase() as Building ) || Building.Z;
     }
 
 
@@ -148,25 +196,25 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
         const uniqueProfessorsMap  = new Map<string, ProfessorData>();
         const uniqueSubjectsMap    = new Map<string, SubjectData>();
         const uniquePeriodsMap     = new Map<string, PeriodData>();
+        const uniqueSectionsMap    = new Map<string, SectionData>();
 
         for ( const row of rawData ) {
             // Rooms
             const roomName = row.Sala?.trim();
 
             if ( roomName && !uniqueRoomsMap.has( roomName )) {
-                const buildingMatch = roomName.match( /-([A-Z])$/ );
-                const building      = buildingMatch ? buildingMatch[1].toUpperCase() : 'A';
                 uniqueRoomsMap.set( roomName, {
                     name        : roomName,
-                    building    : building,
-                    capacity    : Number(row.Capacidad),
-                    sizeValue   : this.#getCapacity(Number(row.Capacidad)),
+                    building    : this.#getBuilding( roomName ),
+                    capacity    : row.Capacidad,
+                    sizeValue   : this.#getCapacity( row.Capacidad ),
+                    spaceType   : this.#getSpaceType( roomName ),
                 });
             }
 
             // Professors
             const professorId = row.ProfesorId;
-            if ( professorId && !uniqueProfessorsMap.has( professorId ) ) {
+            if ( professorId && !uniqueProfessorsMap.has( professorId )) {
                 uniqueProfessorsMap.set( professorId, {
                     id      : professorId.toString(),
                     name    : row.PROF.trim(),
@@ -175,24 +223,50 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
 
             // Subjects
             const subjectCode = row.Sigla?.trim();
-            if ( subjectCode && !uniqueSubjectsMap.has( subjectCode ) ) {
+            if ( subjectCode && !uniqueSubjectsMap.has( subjectCode )) {
                 uniqueSubjectsMap.set( subjectCode, {
+                    id          : subjectCode,
                     name        : row.NombreAsignatura?.trim(),
-                    code        : subjectCode,
-                    startDate   : row.FechaInicio,
-                    periodId    : '',
+                    startDate   : new Date(row.FechaInicio),
                 });
             }
 
             // Periods
             const periodName = row.TipoPeriodo?.trim();
-            if ( periodName && !uniquePeriodsMap.has( periodName ) ) {
-                uniquePeriodsMap.set( periodName, { name: periodName });
+            if ( periodName && !uniquePeriodsMap.has( periodName )) {
+                uniquePeriodsMap.set( periodName, {
+                    id : row.PeriodoAcademicoId.toString(),
+                    name: periodName
+                });
+            }
+
+            // Sections
+            const sectionId = `${row.SSEC}-${row.Sala}-${row.Dia}-${row.Modulo}${(row.Diff ? `-${row.Diff}` : '')}`;
+            // const sectionId = `${row.SSEC}-${row.Sala}`;
+            if ( sectionId && !uniqueSectionsMap.has( sectionId )) {
+                uniqueSectionsMap.set( sectionId, {
+                    id: sectionId,
+                    code: row['Sec.'],
+                    session: row.TipoSesion,
+                    size: row.Modulo,
+                    talla: row.Talla,
+                    correctedRegistrants: row.Inscritos,
+                    realRegistrants: row.InscritosOriginal,
+                    plannedBuilding: row.Edificio,
+                    chairsAvailable: row.SillasDisp,
+                    // roomId: row.Sala,
+                    // dayModuleId: row.Modulo,
+                    // professorId: row.ProfesorId,
+                });
             }
         }
 
+
+        const sectionsList = Array.from( uniqueSectionsMap.values() );
+        console.log('🚀 ~ file: sections.service.ts:265 ~ sectionsList:', sectionsList.length,sectionsList)
+
         const newRoomsToCreate = await this.#getNewEntitiesToCreate(
-            Array.from(uniqueRoomsMap.values()),
+            Array.from( uniqueRoomsMap.values() ),
             'name',
             this.room,
             'name',
@@ -201,11 +275,11 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
                 building    : rData.building,
                 capacity    : rData.capacity,
                 sizeId      : rData.sizeValue,
+                type        : rData.spaceType,
             })
         );
 
         console.log('🚀 ~ file: sections.service.ts:211 ~ newRoomsToCreate:', newRoomsToCreate)
-
 
         if ( newRoomsToCreate.length > 0 ) {
             await this.room.createMany({ data: newRoomsToCreate, skipDuplicates: true });
@@ -231,11 +305,12 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
         // Procesar e insertar Academic Periods
         const newPeriodsToCreate = await this.#getNewEntitiesToCreate(
             Array.from( uniquePeriodsMap.values() ),
-            'name',
+            'id',
             this.period,
-            'name',
+            'id',
             ( pData: PeriodData ) => ({
-                name: pData.name
+                id      : pData.id,
+                name    : pData.name,
             })
         );
 
@@ -245,36 +320,15 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
             await this.period.createMany({ data: newPeriodsToCreate, skipDuplicates: true });
         }
 
-        const currentYear       = new Date().getFullYear();
-        const startOfYear       = new Date( currentYear, 0, 1 );
-        const startOfNextYear   = new Date( currentYear + 1, 0, 1 );
-
-        const periods = await this.period.findMany({
-            select: {
-                id      : true,
-                name    : true,
-            },
-            where: {
-                createdAt: {
-                    gte : startOfYear,
-                    lt  : startOfNextYear
-                }
-            }
-        });
-
-        console.log('🚀 ~ file: sections.service.ts:265 ~ periods:', periods)
-
-
         const newSubjectsToCreate = await this.#getNewEntitiesToCreate(
-            Array.from(uniqueSubjectsMap.values()),
-            'code',
+            Array.from( uniqueSubjectsMap.values() ),
+            'id',
             this.subject,
-            'code',
+            'id',
             (sData: SubjectData) => ({
+                id          : sData.id,
                 name        : sData.name,
-                code        : sData.code,
                 startDate   : sData.startDate,
-                periodId    : periods.find( p => p.name === sData.name )?.id,
             })
         );
 
