@@ -4,11 +4,11 @@ interface ExcelSectionRow {
     CodigoOmega: string;
     Sigla: string;
     NombreAsignatura: string;
-    Sec: number;
+    "Sec.": number;
     CupoSeccion: number;
     Sala: string;
     Capacidad: number;
-    TipoSala: string;
+    Tipo: string;
     Size: string;
     Talla: string;
     Inscritos: number;
