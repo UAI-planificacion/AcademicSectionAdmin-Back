@@ -1,6 +1,5 @@
 generator client {
     provider = "prisma-client-js"
-    // output   = "../generated/prisma"
 }
 
 datasource db {
@@ -32,51 +31,67 @@ model Day {
 }
 
 
+enum ModuleDifference {
+    A
+    B
+}
+
+
 model Module {
-    id          String @id @default(uuid())
+    id          Int @id @default(autoincrement())
     code        String
-    name        String
+    difference  ModuleDifference?
     startHour   String
     endHour     String
     isActive    Boolean @default(true)
 
     dayModules  DayModule[]
-    sections    Section[]
+
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([code])
+}
+
+
+model DayModule {
+    id        Int     @id @default(autoincrement())
+    dayCode   String
+    moduleId  Int
+
+    day       Day    @relation(fields: [dayCode], references: [code])
+    module    Module @relation(fields: [moduleId], references: [id])
+
+    sections Section[]
+
+    @@unique([dayCode, moduleId])
+}
+
+model SubjectSection {
+    subjectId   String
+    sectionId   String
+    periodId    String
+
+    subject     Subject @relation(fields: [subjectId], references: [id])
+    section     Section @relation(fields: [sectionId], references: [id])
+    period      Period @relation(fields: [periodId], references: [id])
+
+    @@id([subjectId, sectionId, periodId])
+}
+
+
+model Subject {
+    id        String @id
+    name        String @unique
+    startDate   DateTime
+    endDate     DateTime?
+
+    subjectSections SubjectSection[]
 
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
 
     @@index([name])
-}
-
-
-model DayModule {
-    dayCode   String
-    moduleId  String
-
-    day       Day    @relation(fields: [dayCode], references: [code])
-    module    Module @relation(fields: [moduleId], references: [id])
-
-    @@id([dayCode, moduleId])
-}
-
-
-model Subject {
-    id          String @id @default(uuid())
-    name        String @unique
-    code        String @unique
-    startDate   DateTime
-    endDate     DateTime?
-
-    sections    Section[]
-
-    periodId    String
-    period      Period @relation(fields: [periodId], references: [id])
-
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
-
-    @@index([name, code])
 }
 
 
@@ -87,7 +102,7 @@ enum PeriodStatus {
 
 
 model Period {
-    id          String @id @default(uuid())
+    id          String @id
     name        String
     startDate   DateTime?
     endDate     DateTime?
@@ -95,7 +110,7 @@ model Period {
     closingDate DateTime?
     status      PeriodStatus @default(InProgress)
 
-    subjects    Subject[]
+    subjectSections SubjectSection[]
 
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
@@ -123,32 +138,43 @@ enum SizeValue {
     MS
     M
     L
-    LABPCA
-    AUDITORIO
-
-    CORE
-    LABRED
-    DIS
-    LABCB
-    LABCC
-    LABPROC
+    XL
 }
 
 
 model Size {
     id      SizeValue @id
-    label   String
-    isRoom  Boolean @default(false)
+    detail  String
 
     rooms   Room[]
+}
+
+enum RoomType {
+    ROOM
+    AUDITORIO
+    LABBIO
+    LABINF
+    LABPROC
+}
+
+
+enum Building {
+    A
+    B
+    C
+    D
+    E
+    F
+    Z
 }
 
 
 model Room {
     id          String @id @default(uuid())
     name        String @unique
-    building    String
+    building    Building
     capacity    Int
+    type        RoomType
 
     sizeId      SizeValue
     size        Size @relation(fields: [sizeId], references: [id])
@@ -164,8 +190,7 @@ model Room {
 
 model Section {
     id                      String @id @default(uuid())
-    code                    String
-    number                  Int
+    code                    Int
     session                 String
 
     size                    SizeValue
@@ -180,17 +205,14 @@ model Section {
     roomId                  String
     room                    Room @relation(fields: [roomId], references: [id])
 
-    moduleId                String
-    module                  Module @relation(fields: [moduleId], references: [id])
+    dayModuleId             Int
+    dayModule               DayModule @relation(fields: [dayModuleId], references: [id])
 
-    subjectId               String
-    subject                 Subject @relation(fields: [subjectId], references: [id])
+    subjectSections SubjectSection[]
 
     professorId             String
     professor               Professor @relation(fields: [professorId], references: [id])
 
     createdAt               DateTime @default(now())
     updatedAt               DateTime @updatedAt
-
-    @@index([code])
 }
