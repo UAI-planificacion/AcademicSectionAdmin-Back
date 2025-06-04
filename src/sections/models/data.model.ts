@@ -5,6 +5,7 @@ export interface RoomData {
     capacity: number;
     building: string;
     sizeValue: $Enums.SizeValue;
+    spaceType: $Enums.RoomType;
 }
 
 
@@ -15,13 +16,29 @@ export interface ProfessorData {
 
 
 export interface SubjectData {
+    id: string;
     name: string;
-    code: string;
-    startDate: string;
-    periodId: string;
+    startDate: Date;
 }
 
 
 export interface PeriodData {
+    id: string;
     name: string;
+}
+
+
+export interface SectionData {
+    id: string;
+    code: number;
+    session: string;
+    size: string;
+    talla: string;
+    correctedRegistrants: number;
+    realRegistrants: number;
+    plannedBuilding: string;
+    chairsAvailable: number;
+    // roomId: string;
+    // dayModuleId: number;
+    // professorId: string;
 }
