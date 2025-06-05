@@ -1,7 +1,10 @@
 export enum SpaceType {
     ROOM        = 'ROOM',
     AUDITORIO   = 'AUDITORIO',
-    LABBIO      = 'LABBIO',
-    LABINF      = 'LABINF',
-    LABPROC     = 'LABPROC',
+    COMMUNIC    = 'COMMUNIC',
+    LAB         = 'LAB',
+    LABPC       = 'LABPC',
+    DIS         = 'DIS',
+    GARAGE      = 'GARAGE',
+    CORE        = 'CORE',
 }
