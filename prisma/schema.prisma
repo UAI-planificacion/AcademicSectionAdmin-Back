@@ -149,12 +149,16 @@ model Size {
     rooms   Room[]
 }
 
+
 enum RoomType {
     ROOM
     AUDITORIO
-    LABBIO
-    LABINF
-    LABPROC
+    COMMUNIC
+    LAB
+    LABPC
+    DIS
+    GARAGE
+    CORE
 }
 
 
@@ -170,8 +174,7 @@ enum Building {
 
 
 model Room {
-    id          String @id @default(uuid())
-    name        String @unique
+    id          String @id
     building    Building
     capacity    Int
     type        RoomType
@@ -183,8 +186,6 @@ model Room {
 
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
-
-    @@index([name])
 }
 
 
@@ -192,13 +193,9 @@ model Section {
     id                      String @id @default(uuid())
     code                    Int
     session                 String
-
-    size                    SizeValue
-    talla                   SizeValue
-
+    size                    String
     correctedRegistrants    Int
     realRegistrants         Int
-
     plannedBuilding         String
     chairsAvailable         Int?
 
@@ -210,8 +207,8 @@ model Section {
 
     subjectSections SubjectSection[]
 
-    professorId             String
-    professor               Professor @relation(fields: [professorId], references: [id])
+    professorId             String?
+    professor               Professor? @relation(fields: [professorId], references: [id])
 
     createdAt               DateTime @default(now())
     updatedAt               DateTime @updatedAt
