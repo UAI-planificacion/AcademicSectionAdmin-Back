@@ -1,7 +1,7 @@
 import { $Enums } from "@prisma/client";
 
 export interface RoomData {
-    name: string;
+    id: string;
     capacity: number;
     building: string;
     sizeValue: $Enums.SizeValue;
@@ -32,13 +32,12 @@ export interface SectionData {
     id: string;
     code: number;
     session: string;
-    size: string;
-    talla: string;
+    size:  string;
     correctedRegistrants: number;
     realRegistrants: number;
     plannedBuilding: string;
     chairsAvailable: number;
-    // roomId: string;
-    // dayModuleId: number;
-    // professorId: string;
+    roomId: string;
+    dayModuleId: number;
+    professorId?: string | null;
 }
