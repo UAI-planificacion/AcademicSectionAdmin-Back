@@ -14,9 +14,9 @@ interface ExcelSectionRow {
     Inscritos: number;
     InscritosOriginal: number;
     PROF: string;
-    ProfesorId: string;
+    ProfesorId: string | null;
     Dia: number;
-    Modulo: string;
+    Modulo: number;
     Diff: string | null;
     Edificio: string;
     FechaInicio: string;
