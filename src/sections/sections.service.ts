@@ -48,6 +48,13 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
 
     async #getSectionData(): Promise<SectionDto[]> {
         const sections = await this.section.findMany({
+            where : {
+                dayModule: {
+                    module: {
+                        isActive: true,
+                    },
+                }
+            },
             select: {
                 id: true,
                 code: true,
