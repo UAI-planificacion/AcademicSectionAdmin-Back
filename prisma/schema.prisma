@@ -60,7 +60,7 @@ model DayModule {
     moduleId  Int
 
     day       Day    @relation(fields: [dayCode], references: [code])
-    module    Module @relation(fields: [moduleId], references: [id])
+    module    Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
     sections Section[]
 
