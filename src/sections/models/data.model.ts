@@ -28,21 +28,6 @@ export interface PeriodData {
 }
 
 
-export interface SectionData {
-    id: string;
-    code: number;
-    session: string;
-    size:  string;
-    correctedRegistrants: number;
-    realRegistrants: number;
-    plannedBuilding: string;
-    chairsAvailable: number;
-    roomId: string;
-    dayModuleId: number;
-    professorId?: string | null;
-}
-
-
 export interface Section {
     id                      : string;
     code                    : number;
