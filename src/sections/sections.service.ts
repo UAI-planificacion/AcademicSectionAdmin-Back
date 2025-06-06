@@ -9,17 +9,16 @@ import {
     ProfessorData,
     RoomData,
     Section,
-    SectionData,
     SubjectData,
     SubjectSection
 }                               from '@sections/models/data.model';
 import { CreateSectionDto }     from '@sections/dto/create-section.dto';
 import { UpdateSectionDto }     from '@sections/dto/update-section.dto';
-import { ProcessedSectionDto }  from '@sections/dto/processed-section.dto';
 import { SizeValue }            from '@sections/enums/capacity-size.enum';
 import { SpaceType }            from '@sections/enums/space-type.enum';
 import { Building }             from '@sections/enums/building.enum';
-import { SizeEnum } from './enums/size.enum';
+import { SizeEnum }             from '@sections/enums/size.enum';
+import { SectionDto }           from '@sections/dto/section.dto';
 
 
 @Injectable()
@@ -47,7 +46,7 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
     }
 
 
-    async #getSectionData() {
+    async #getSectionData(): Promise<SectionDto[]> {
         const sections = await this.section.findMany({
             select: {
                 id: true,
@@ -499,7 +498,7 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
             const inserted = await this.section.createMany({ data: sectionList, skipDuplicates: true });
 
             if ( inserted.count === 0 ) {
-                throw new BadRequestException('No sections were inserted');
+                throw new BadRequestException( 'No sections were inserted' );
             }
 
             if ( ssecList.length > 0 ) {
