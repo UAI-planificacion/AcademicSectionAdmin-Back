@@ -2,13 +2,16 @@ import { Injectable, BadRequestException, OnModuleInit }  from '@nestjs/common';
 
 import * as xlsx                from 'xlsx';
 import { PrismaClient, $Enums } from '@prisma/client';
+import { v7 as uuidv7 }         from 'uuid';
 
 import {
     PeriodData,
     ProfessorData,
     RoomData,
+    Section,
     SectionData,
-    SubjectData
+    SubjectData,
+    SubjectSection
 }                               from '@sections/models/data.model';
 import { CreateSectionDto }     from '@sections/dto/create-section.dto';
 import { UpdateSectionDto }     from '@sections/dto/update-section.dto';
@@ -16,6 +19,7 @@ import { ProcessedSectionDto }  from '@sections/dto/processed-section.dto';
 import { SizeValue }            from '@sections/enums/capacity-size.enum';
 import { SpaceType }            from '@sections/enums/space-type.enum';
 import { Building }             from '@sections/enums/building.enum';
+import { SizeEnum } from './enums/size.enum';
 
 
 @Injectable()
@@ -25,24 +29,139 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
 		this.$connect();
 	}
 
-    create(createSectionDto: CreateSectionDto) {
-        return 'This action adds a new section';
+
+    async create( createSectionDto: CreateSectionDto ) {
+        try {
+            const section = await this.section.create({
+                data: {
+                    id: uuidv7(),
+                    ...createSectionDto,
+                },
+            });
+
+            return section;
+        } catch ( error ) {
+            console.error( 'Error creating section:', error );
+            throw error;
+        }
     }
 
-    findAll() {
-        return `This action returns all sections`;
+
+    async #getSectionData() {
+        const sections = await this.section.findMany({
+            select: {
+                id: true,
+                code: true,
+                session: true,
+                size: true,
+                correctedRegistrants: true,
+                realRegistrants: true,
+                plannedBuilding: true,
+                chairsAvailable: true,
+                room: {
+                    select : {
+                        id: true
+                    }
+                },
+                dayModuleId: true,
+                // dayModule: {
+                //     select : {
+                //         id: true,
+                //         dayCode: true,
+                //         moduleId: true,
+                //     }
+                // },
+                professor: {
+                    select : {
+                        name: true,
+                    }
+                },
+                subjectSections: {
+                    select: {
+                        subject: {
+                            select: {
+                                id: true,
+                                name: true,
+                            }
+                        },
+                        period: {
+                            select: {
+                                id: true,
+                                name: true,
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        return sections.map( section => ({
+            id          : section.id,
+            code        : section.code,
+            session     : section.session,
+            size        : section.size,
+            correctedRegistrants: section.correctedRegistrants,
+            realRegistrants: section.realRegistrants,
+            plannedBuilding: section.plannedBuilding,
+            chairsAvailable: section.chairsAvailable,
+            room        : section.room.id,
+            professor   : section.professor?.name ?? 'Sin profesor',
+            dayModuleId : section.dayModuleId,
+            // dayModule   : {
+            //     id          : section.dayModule.id,
+            //     dayCode     : section.dayModule.dayCode,
+            //     moduleId    : section.dayModule.moduleId,
+            // },
+            subjectName : section.subjectSections[0].subject.name,
+            subjectId   : section.subjectSections[0].subject.id,
+            periodName  : section.subjectSections[0].period.name,
+            periodId    : section.subjectSections[0].period.id,
+        }));
     }
 
-    findOne(id: number) {
-        return `This action returns a #${id} section`;
+
+    async findAll() {
+        return this.#getSectionData();
     }
 
-    update(id: number, updateSectionDto: UpdateSectionDto) {
-        return `This action updates a #${id} section`;
+    async findOne( id: string ) {
+        try {
+            const section = await this.section.findUnique({
+                where: { id },
+            });
+
+            return section;
+        } catch ( error ) {
+            console.error( 'Error finding section:', error );
+            throw error;
+        }
     }
 
-    remove(id: number) {
-        return `This action removes a #${id} section`;
+    async update( id: string, updateSectionDto: UpdateSectionDto ) {
+        try {
+            const section = await this.section.update({
+                where: { id },
+                data: updateSectionDto,
+            });
+
+            return section;
+        } catch ( error ) {
+            console.error( 'Error updating section:', error );
+            throw error;
+        }
+    }
+
+    async remove( id: string ) {
+        try {
+            const section = await this.section.delete({
+                where: { id },
+            });
+
+            return section;
+        } catch ( error ) {
+            console.error( 'Error deleting section:', error );
+            throw error;
+        }
     }
 
     /**
@@ -50,7 +169,7 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
      * @param file The uploaded Excel file
      * @returns Array of processed section data
      */
-    async processExcelFile( file: Express.Multer.File ): Promise<ProcessedSectionDto[]> {
+    async processExcelFile( file: Express.Multer.File ) {
         if ( !file ) {
             throw new BadRequestException( 'No file uploaded' );
         }
@@ -100,6 +219,26 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
         return SizeValue.XL as $Enums.SizeValue;
     }
 
+
+    #getSize( size: string, capacity: number ): $Enums.SizeValue {
+        return {
+            [SizeEnum.CORE]         : SizeValue.XS  as $Enums.SizeValue,
+            [SizeEnum.GARAGE]       : SizeValue.S   as $Enums.SizeValue,
+            [SizeEnum.DIS]          : SizeValue.XL  as $Enums.SizeValue,
+            [SizeEnum.AUDITORIO]    : SizeValue.XL  as $Enums.SizeValue,
+            [SizeEnum.LABPAC]       : SizeValue.XL  as $Enums.SizeValue,
+            [SizeEnum.LABPCB]       : SizeValue.L   as $Enums.SizeValue,
+            [SizeEnum.LABPCC]       : capacity === 60 ? SizeValue.L : SizeValue.S as $Enums.SizeValue,
+            [SizeEnum.LABPCE]       : SizeValue.MS  as $Enums.SizeValue,
+            [SizeEnum.LABRED]       : SizeValue.M   as $Enums.SizeValue,
+            [SizeEnum.M]            : SizeValue.M   as $Enums.SizeValue,
+            [SizeEnum.MS]           : SizeValue.MS  as $Enums.SizeValue,
+            [SizeEnum.L]            : SizeValue.L   as $Enums.SizeValue,
+            [SizeEnum.SE]           : SizeValue.S   as $Enums.SizeValue,
+            [SizeEnum.S]            : SizeValue.S   as $Enums.SizeValue,
+            [SizeEnum.XS]           : SizeValue.XS  as $Enums.SizeValue,
+        }[size] || SizeValue.L;
+    }
 
     #getSpaceType( name: string, size: string ): $Enums.RoomType {
         // Comunication
@@ -207,16 +346,10 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
      * @param rawData Raw data from Excel file
      * @returns Processed section data
      */
-    async #processRawData( rawData: ExcelSectionRow[] ): Promise<ProcessedSectionDto[]> {
+    async #processRawData( rawData: ExcelSectionRow[] ) {
         if ( !rawData || rawData.length === 0 ) {
             throw new BadRequestException( 'Excel file is empty or has no valid data' );
         }
-
-        const uniqueRoomsMap       = new Map<string, RoomData>();
-        const uniqueProfessorsMap  = new Map<string, ProfessorData>();
-        const uniqueSubjectsMap    = new Map<string, SubjectData>();
-        const uniquePeriodsMap     = new Map<string, PeriodData>();
-        const uniqueSectionsMap    = new Map<string, SectionData>();
 
         const dayModules = await this.dayModule.findMany({});
 
@@ -224,13 +357,14 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
             throw new BadRequestException( 'No day modules found' );
         }
 
+        const uniqueRoomsMap       = new Map<string, RoomData>();
+        const uniqueProfessorsMap  = new Map<string, ProfessorData>();
+        const uniqueSubjectsMap    = new Map<string, SubjectData>();
+        const uniquePeriodsMap     = new Map<string, PeriodData>();
 
-        // const sectionsList: any[] = [];
+        const sectionList   : Section[] = [];
+        const ssecList      : SubjectSection[] = [];
 
-
-        const sobrantes: any[] = []
-
-        const subjectSection : any[] = []
         for ( const row of rawData ) {
             // Rooms
             const roomName = row.Sala?.trim();
@@ -265,78 +399,37 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
             }
 
             // Periods
-            const periodName = row.TipoPeriodo?.trim();
+            const periodName = `${row.PeriodoAcademicoId}-${row.TipoPeriodo?.trim()}`;
             if ( periodName && !uniquePeriodsMap.has( periodName )) {
                 uniquePeriodsMap.set( periodName, {
                     id : row.PeriodoAcademicoId.toString(),
-                    name: periodName
+                    name: row.TipoPeriodo?.trim()
                 });
             }
 
             // Sections
-            // const sectionId = `${row.CodigoOmega}|${row.SSEC}|${row.Sala}|${row.ProfesorId}|${row.Dia}:${row.Modulo}${(row.Diff ? `-${row.Diff}` : '')}`;
-            const sectionId = row.COD;
-            if ( sectionId && !uniqueSectionsMap.has( sectionId )) {
-                uniqueSectionsMap.set( sectionId, {
-                    id: sectionId,
-                    code: row['Sec.'],
-                    session: row.Tipo,
-                    size: row.Size as SizeValue,
-                    // talla: row.Talla as SizeValue,
-                    correctedRegistrants: row.Inscritos,
-                    realRegistrants: row.InscritosOriginal,
-                    plannedBuilding: row.Edificio,
-                    chairsAvailable: row.SillasDisp,
-                    roomId: row.Sala,
-                    dayModuleId: dayModules.find( dm => Number(dm.dayCode) === row.Dia && dm.moduleId === row.Modulo )?.id || 1,
-                    professorId: row.ProfesorId?.toString() || null,
-                });
+            const sectionId = uuidv7();
+            sectionList.push({
+                id                      : sectionId,
+                code                    : row['Sec.'],
+                session                 : row.Tipo,
+                size                    : this.#getSize( row.Size, row.Capacidad ),
+                correctedRegistrants    : row.Inscritos,
+                realRegistrants         : row.InscritosOriginal,
+                plannedBuilding         : row.Edificio,
+                chairsAvailable         : row.SillasDisp,
+                roomId                  : row.Sala,
+                dayModuleId             : dayModules.find( dm => Number(dm.dayCode) === row.Dia && dm.moduleId === row.Modulo )?.id || 1,
+                professorId             : row.ProfesorId?.toString() || null,
+            });
 
-                subjectSection.push({
-                    subjectId: row.Sigla?.trim(),
-                    sectionId: sectionId,
-                    periodId: row.PeriodoAcademicoId.toString(),
-                });
-            }
-            else{
-                sobrantes.push({
-                    
-                    id: sectionId,
-                    code: row['Sec.'],
-                    session: row.Tipo,
-                    size: row.Size as SizeValue,
-                    // talla: row.Talla as SizeValue,
-                    correctedRegistrants: row.Inscritos,
-                    realRegistrants: row.InscritosOriginal,
-                    plannedBuilding: row.Edificio,
-                    chairsAvailable: row.SillasDisp,
-                    roomId: row.Sala,
-                    dayModuleId: dayModules.find( dm => Number(dm.dayCode) === row.Dia && dm.moduleId === row.Modulo )?.id || 1,
-                    professorId: row.ProfesorId?.toString() || null,
-                });
-            }
-
-                // sectionsList.push({
-                //     code: row['Sec.'],
-                //     session: row.Tipo,
-                //     size: row.Size as SizeValue,
-                //     // talla: row.Talla as SizeValue,
-                //     correctedRegistrants: row.Inscritos,
-                //     realRegistrants: row.InscritosOriginal,
-                //     plannedBuilding: row.Edificio,
-                //     chairsAvailable: row.SillasDisp,
-                //     roomId: row.Sala,
-                //     dayModuleId: dayModules.find( dm => Number(dm.dayCode) === row.Dia && dm.moduleId === row.Modulo )?.id || 1,
-                //     professorId: row.ProfesorId?.toString() || null,
-                // });
+            // SSEC
+            ssecList.push({
+                sectionId,
+                subjectId: row.Sigla?.trim(),
+                periodId: row.PeriodoAcademicoId.toString(),
+            })
         }
-
-        const sectionsList = Array.from( uniqueSectionsMap.values() );
-        // console.log('🚀 ~ file: sections.service.ts:265 ~ sectionsList:', sectionsList.length,sectionsList)
-
-        console.log('🚀 ~ file: sections.service.ts:265 ~ sobrantes:', sobrantes.length,sobrantes)
-
-        console.log('🚀 ~ file: sections.service.ts:313 ~ subjectSection:', subjectSection.length,subjectSection)
 
         const newRoomsToCreate = await this.#getNewEntitiesToCreate(
             Array.from( uniqueRoomsMap.values() ),
@@ -402,24 +495,18 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
             await this.subject.createMany({ data: newSubjectsToCreate, skipDuplicates: true });
         }
 
+        if ( sectionList.length > 0 ) {
+            const inserted = await this.section.createMany({ data: sectionList, skipDuplicates: true });
 
-        if ( sectionsList.length > 0 ) {
-            const sectionsToCreate = sectionsList.map( sData => ({
-                code                    : sData.code,
-                session                 : sData.session,
-                size                    : sData.size,
-                correctedRegistrants    : sData.correctedRegistrants,
-                realRegistrants         : sData.realRegistrants,
-                plannedBuilding         : sData.plannedBuilding,
-                chairsAvailable         : sData.chairsAvailable,
-                roomId                  : sData.roomId,
-                dayModuleId             : sData.dayModuleId,
-                professorId             : sData.professorId,
-            }));
+            if ( inserted.count === 0 ) {
+                throw new BadRequestException('No sections were inserted');
+            }
 
-            await this.section.createMany({ data: sectionsToCreate, skipDuplicates: true });
+            if ( ssecList.length > 0 ) {
+                await this.subjectSection.createMany({ data: ssecList });
+            }
         }
 
-        return []
+        return this.#getSectionData();
     }
 }
