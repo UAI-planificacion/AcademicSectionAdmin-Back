@@ -82,7 +82,7 @@ model SubjectSection {
 
 model Subject {
     id        String @id
-    name        String @unique
+    name        String
     startDate   DateTime
     endDate     DateTime?
 
@@ -190,13 +190,13 @@ model Room {
 
 
 model Section {
-    id                      String @id @default(uuid())
+    id                      String @id
     code                    Int
-    session                 String
-    size                    String
-    correctedRegistrants    Int
-    realRegistrants         Int
-    plannedBuilding         String
+    session                 String?
+    size                    SizeValue?
+    correctedRegistrants    Int?
+    realRegistrants         Int?
+    plannedBuilding         String?
     chairsAvailable         Int?
 
     roomId                  String
