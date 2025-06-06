@@ -23,7 +23,7 @@ import { FileInterceptor }  from '@nestjs/platform-express';
 import { SectionsService }      from '@sections/sections.service';
 import { CreateSectionDto }     from '@sections/dto/create-section.dto';
 import { UpdateSectionDto }     from '@sections/dto/update-section.dto';
-import { ProcessedSectionDto }  from '@sections/dto/processed-section.dto';
+import { SectionDto }           from '@sections/dto/section.dto';
 
 @ApiTags('sections')
 @Controller('sections')
@@ -54,14 +54,16 @@ export class SectionsController {
             }
         }
     })
-    // @ApiResponse({ 
-    //     status: 200, 
-    //     description: 'Excel file processed successfully',
-    //     type: [ProcessedSectionDto]
-    // })
+    @ApiResponse({ 
+        status: 200, 
+        description: 'Excel file processed successfully',
+        type: [SectionDto]
+    })
     @ApiResponse({ status: 400, description: 'Bad Request or invalid file format' })
     @UseInterceptors(FileInterceptor('file'))
-    async uploadExcelFile(@UploadedFile() file: Express.Multer.File) {
+    async uploadExcelFile(
+        @UploadedFile() file: Express.Multer.File
+    ): Promise<SectionDto[]> {
         return this.sectionsService.processExcelFile( file );
     }
 
