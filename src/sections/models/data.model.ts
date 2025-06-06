@@ -41,3 +41,25 @@ export interface SectionData {
     dayModuleId: number;
     professorId?: string | null;
 }
+
+
+export interface Section {
+    id                      : string;
+    code                    : number;
+    session                 : string;
+    size                    : $Enums.SizeValue;
+    correctedRegistrants    : number;
+    realRegistrants         : number;
+    plannedBuilding         : string;
+    chairsAvailable         : number;
+    roomId                  : string;
+    dayModuleId             : number;
+    professorId             : string | null;
+}
+
+
+export interface SubjectSection {
+    sectionId   : string;
+    subjectId   : string;
+    periodId    : string;
+}
