@@ -54,14 +54,14 @@ export class SectionsController {
             }
         }
     })
-    @ApiResponse({ 
-        status: 200, 
-        description: 'Excel file processed successfully',
-        type: [ProcessedSectionDto]
-    })
+    // @ApiResponse({ 
+    //     status: 200, 
+    //     description: 'Excel file processed successfully',
+    //     type: [ProcessedSectionDto]
+    // })
     @ApiResponse({ status: 400, description: 'Bad Request or invalid file format' })
     @UseInterceptors(FileInterceptor('file'))
-    async uploadExcelFile(@UploadedFile() file: Express.Multer.File): Promise<ProcessedSectionDto[]> {
+    async uploadExcelFile(@UploadedFile() file: Express.Multer.File) {
         return this.sectionsService.processExcelFile( file );
     }
 
@@ -79,7 +79,7 @@ export class SectionsController {
     @ApiResponse({ status: 200, description: 'Return the section' })
     @ApiResponse({ status: 404, description: 'Section not found' })
     findOne(@Param('id') id: string) {
-        return this.sectionsService.findOne(+id);
+        return this.sectionsService.findOne(id);
     }
 
     @Patch(':id')
@@ -87,7 +87,7 @@ export class SectionsController {
     @ApiResponse({ status: 200, description: 'The section has been successfully updated.' })
     @ApiResponse({ status: 404, description: 'Section not found' })
     update(@Param('id') id: string, @Body() updateSectionDto: UpdateSectionDto) {
-        return this.sectionsService.update(+id, updateSectionDto);
+        return this.sectionsService.update(id, updateSectionDto);
     }
 
     @Delete(':id')
@@ -95,6 +95,6 @@ export class SectionsController {
     @ApiResponse({ status: 200, description: 'The section has been successfully deleted.' })
     @ApiResponse({ status: 404, description: 'Section not found' })
     remove(@Param('id') id: string) {
-        return this.sectionsService.remove(+id);
+        return this.sectionsService.remove( id );
     }
 }
