@@ -1,5 +1,5 @@
 import { NestFactory }                      from '@nestjs/core';
-import { Logger }                           from '@nestjs/common';
+import { Logger, ValidationPipe }                           from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder }   from '@nestjs/swagger';
 
 import { AppModule }    from '@app/app.module';
@@ -12,7 +12,12 @@ import { ENV }          from '@config/envs';
 
     const { PORT, NODE_ENV, API_PREFIX, API_DOC_PREFIX, CORS_ORIGIN } = ENV();
 
-    app.setGlobalPrefix( API_PREFIX )
+    app
+    .useGlobalPipes( new ValidationPipe({
+        transform: true,
+        whitelist: true
+    }))
+    .setGlobalPrefix( API_PREFIX )
     .enableCors({
         origin: CORS_ORIGIN,
         methods: ['GET', 'POST', 'DELETE', 'PATCH'],
