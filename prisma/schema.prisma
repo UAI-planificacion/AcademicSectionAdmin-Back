@@ -67,6 +67,7 @@ model DayModule {
     @@unique([dayCode, moduleId])
 }
 
+
 model SubjectSection {
     subjectId   String
     sectionId   String
@@ -131,6 +132,7 @@ model Professor {
 
     @@index([name])
 }
+
 
 enum SizeValue {
     XS
