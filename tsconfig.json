@@ -20,6 +20,7 @@
             "@sizes/*"      : ["src/sizes/*"],
             "@spaces/*"     : ["src/spaces/*"],
             "@subjects/*"   : ["src/subjects/*"],
+            "@days/*"       : ["src/days/*"],
         },
         "incremental": true,
         "skipLibCheck": true,
