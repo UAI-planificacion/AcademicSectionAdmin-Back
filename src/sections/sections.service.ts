@@ -215,14 +215,22 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
         }
     }
 
-    #getCapacity( capacity: number ): $Enums.SizeValue {
-        if ( capacity < 30 ) return SizeValue.XS as $Enums.SizeValue;
-        if ( capacity < 40 ) return SizeValue.S  as $Enums.SizeValue;
-        if ( capacity < 50 ) return SizeValue.MS as $Enums.SizeValue;
-        if ( capacity < 60 ) return SizeValue.M  as $Enums.SizeValue;
-        if ( capacity < 70 ) return SizeValue.L  as $Enums.SizeValue;
 
-        return SizeValue.XL as $Enums.SizeValue;
+    #getCapacity( capacity: number, sizes: {
+        id          : $Enums.SizeValue;
+        min         : number | null;
+        max         : number | null;
+        lessThan    : number | null;
+        greaterThan : number | null;
+    }[] ): $Enums.SizeValue {
+        for ( const size of sizes ) {
+            if ( size.min && capacity < size.min ) return size.id;
+            if ( size.max && capacity > size.max ) return size.id;
+            if ( size.lessThan && capacity < size.lessThan ) return size.id;
+            if ( size.greaterThan && capacity > size.greaterThan ) return size.id;
+        }
+
+        return SizeValue.XL;
     }
 
 
@@ -272,7 +280,7 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
 
         if ( space.includes( name )) return SpaceType.LAB as $Enums.RoomType;
         // Laboratorio PC
-        else if ( name.includes( 'LAB' )) return SpaceType.LABPC as $Enums.RoomType;
+        else if ( name.toUpperCase().includes( 'LAB' )) return SpaceType.LABPC as $Enums.RoomType;
 
         // Auditorio
         if ( size === SpaceType.AUDITORIO ) return SpaceType.AUDITORIO as $Enums.RoomType;
@@ -308,26 +316,25 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
 
         if ( space.includes( name )) return buildingList[ space.indexOf( name )];
 
-        return ( name.split('-')[1]?.[0]?.toUpperCase() as Building ) || Building.Z;
+        return ( name.split( '-' )[1]?.[0]?.toUpperCase() as Building ) || Building.Z;
     }
 
 
     async #getNewEntitiesToCreate<
-        TInputEntity extends Record<string, any>, // Entidad de entrada genérica
-        TDbModel extends { // Tipo del cliente del modelo de Prisma
-            findMany: (args: any) => Promise<any[]>;
-            createMany: (args: any) => Promise<any>;
+        TInputEntity extends Record<string, any>,
+        TDbModel extends {
+            findMany    : ( args: any ) => Promise<any[]>;
+            createMany  : ( args: any ) => Promise<any>;
         },
-        TUniqueKey extends keyof TInputEntity // Clave única en la entidad de entrada
+        TUniqueKey extends keyof TInputEntity
     >(
-        entities: TInputEntity[],
-        uniqueKey: TUniqueKey, // La clave única en la entidad de entrada (ej. 'name', 'id')
-        prismaModel: TDbModel, // El cliente del modelo de Prisma (ej. this.prisma.room)
-        dbSearchKey: string, // El nombre de la columna en la DB para la búsqueda (ej. 'name', 'id')
-        mapper: (entity: TInputEntity) => any // Mapper
-    ): Promise<any> { // Retorna el tipo exacto para 'data' de createMany
-        const uniqueKeysInExcel = entities.map(e => e[uniqueKey]) as Array<string | number | boolean>;
-
+        entities    : TInputEntity[],
+        uniqueKey   : TUniqueKey,
+        prismaModel : TDbModel,
+        dbSearchKey : string,
+        mapper: ( entity: TInputEntity ) => any
+    ): Promise<any> {
+        const uniqueKeysInExcel = entities.map( e => e[ uniqueKey ]) as Array<string | number | boolean>;
         const existingDbEntities = await prismaModel.findMany({
             where: {
                 [dbSearchKey]: {
@@ -341,10 +348,9 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
 
         const existingDbKeys = new Set( existingDbEntities.map( e => e[ dbSearchKey ]));
 
-        // Filtra las entidades que no existen en la DB y las mapea al formato de creación
         return entities
-            .filter(entity => !existingDbKeys.has(entity[uniqueKey]))
-            .map(mapper);
+            .filter( entity => !existingDbKeys.has( entity[ uniqueKey ]))
+            .map( mapper );
     }
 
     /**
@@ -371,6 +377,16 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
         const sectionList   : Section[] = [];
         const ssecList      : SubjectSection[] = [];
 
+        const sizes = await this.size.findMany({
+            select: {
+                id          : true,
+                min         : true,
+                max         : true,
+                lessThan    : true,
+                greaterThan : true,
+            }
+        });
+
         for ( const row of rawData ) {
             // Rooms
             const roomName = row.Sala?.trim();
@@ -380,7 +396,7 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
                     id        : roomName,
                     building    : this.#getBuilding( roomName ),
                     capacity    : row.Capacidad,
-                    sizeValue   : this.#getCapacity( row.Capacidad ),
+                    sizeValue   : this.#getCapacity( row.Capacidad, sizes ),
                     spaceType   : this.#getSpaceType( roomName, row.Talla ),
                 });
             }
