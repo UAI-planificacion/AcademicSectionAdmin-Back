@@ -136,17 +136,24 @@ model Professor {
 
 enum SizeValue {
     XS
+    XE
     S
+    SE
     MS
     M
     L
     XL
+    XXL
 }
 
 
 model Size {
-    id      SizeValue @id
-    detail  String
+    id          SizeValue @id
+    detail      String
+    min         Int?
+    max         Int?
+    lessThan    Int?
+    greaterThan Int?
 
     rooms   Room[]
 }
