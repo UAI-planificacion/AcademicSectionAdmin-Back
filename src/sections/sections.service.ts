@@ -69,14 +69,12 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
                         id: true
                     }
                 },
-                dayModuleId: true,
-                // dayModule: {
-                //     select : {
-                //         id: true,
-                //         dayCode: true,
-                //         moduleId: true,
-                //     }
-                // },
+                dayModule: {
+                    select : {
+                        dayCode: true,
+                        moduleId: true,
+                    }
+                },
                 professor: {
                     select : {
                         name: true,
@@ -102,32 +100,27 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
         });
 
         return sections.map( section => ({
-            id          : section.id,
-            code        : section.code,
-            session     : section.session,
-            size        : section.size,
-            correctedRegistrants: section.correctedRegistrants,
-            realRegistrants: section.realRegistrants,
-            plannedBuilding: section.plannedBuilding,
-            chairsAvailable: section.chairsAvailable,
-            room        : section.room.id,
-            professor   : section.professor?.name ?? 'Sin profesor',
-            dayModuleId : section.dayModuleId,
-            // dayModule   : {
-            //     id          : section.dayModule.id,
-            //     dayCode     : section.dayModule.dayCode,
-            //     moduleId    : section.dayModule.moduleId,
-            // },
-            subjectName : section.subjectSections[0].subject.name,
-            subjectId   : section.subjectSections[0].subject.id,
-            periodName  : section.subjectSections[0].period.name,
-            periodId    : section.subjectSections[0].period.id,
+            id                      : section.id,
+            code                    : section.code,
+            session                 : section.session,
+            size                    : section.size,
+            correctedRegistrants    : section.correctedRegistrants,
+            realRegistrants         : section.realRegistrants,
+            plannedBuilding         : section.plannedBuilding,
+            chairsAvailable         : section.chairsAvailable,
+            room                    : section.room.id,
+            professor               : section.professor?.name ?? 'Sin profesor',
+            day                     : Number( section.dayModule.dayCode ),
+            moduleId                : section.dayModule.moduleId.toString(),
+            subjectName             : section.subjectSections[0].subject.name,
+            subjectId               : section.subjectSections[0].subject.id,
+            period                  : `${section.subjectSections[0].period.id}-${section.subjectSections[0].period.name}`,
         }));
     }
 
 
     async findAll() {
-        return this.#getSectionData();
+        return await this.#getSectionData();
     }
 
     async findOne( id: string ) {
