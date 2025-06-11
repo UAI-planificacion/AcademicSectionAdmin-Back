@@ -104,5 +104,5 @@ export class CreateModuleDto {
     @IsString({ each: true })
     @IsNotEmpty({ each: true })
     @ArrayUnique()
-    dayCodes: string[];
+    dayIds: number[];
 }
