@@ -16,14 +16,14 @@ export class DaysService extends PrismaClient implements OnModuleInit {
         return this.day.findMany({});
     }
 
-    findOne(id: string) {
-        return this.day.findUnique({ where: { code: id } });
+    findOne( id: number ) {
+        return this.day.findUnique({ where: { id } });
     }
 
-    async update( id: string, updateDayDto: UpdateDayDto ) {
+    async update( id: number, updateDayDto: UpdateDayDto ) {
         try {
             const day = await this.day.update({
-                where: { code: id },
+                where: { id },
                 data: updateDayDto
             });
             return day;
