@@ -19,7 +19,7 @@ export class DaysController {
     findOne(
         @Param( 'id' ) id: string
     ) {
-        return this.daysService.findOne( id );
+        return this.daysService.findOne( +id );
     }
 
     @Patch( ':id' )
@@ -27,7 +27,7 @@ export class DaysController {
         @Param( 'id' ) id: string,
         @Body() updateDayDto: UpdateDayDto
     ) {
-        return this.daysService.update( id, updateDayDto );
+        return this.daysService.update( +id, updateDayDto );
     }
 
 }
