@@ -16,13 +16,13 @@ export class ModulesService extends PrismaClient implements OnModuleInit {
 
     async create( createModuleDto: CreateModuleDto ) {
         try {
-            const { dayCodes, ...data } = createModuleDto;
+            const { dayIds, ...data } = createModuleDto;
             const module = await this.module.create({ data });
 
             await this.dayModule.createMany({
-                data: dayCodes.map(dayCode => ({
+                data: dayIds.map(dayId => ({
                     moduleId: module.id,
-                    dayCode,
+                    dayId,
                 })),
             });
 
@@ -39,43 +39,69 @@ export class ModulesService extends PrismaClient implements OnModuleInit {
     }
 
 
-    findAll() {
-        return this.module.findMany({
-            include: {
-                dayModules: true,
-            },
+    async #filterModules() {
+        const modules = await this.module.findMany({
+            select: {
+                id          : true,
+                startHour   : true,
+                endHour     : true,
+                difference  : true,
+                code        : true,
+                isActive    : true,
+                order       : true,
+                dayModules  : {
+                    select: {
+                        dayId: true,
+                    },
+                    orderBy: {
+                        dayId: 'asc',
+                    }
+                }
+            }
+        });
+
+        return modules.flatMap( module => {
+            const { dayModules, ...rest } = module;
+
+            return dayModules.map( dayModule => ({
+                ...rest,
+                id      : `${rest.id}${rest.difference? `-${rest.difference}` : ''}`,
+                name    : `M${rest.code}:${dayModule.dayId}${rest.difference? `-${rest.difference}` : ''}`,
+                dayId   : dayModule.dayId
+            }));
         });
     }
 
 
-    findOne( id: number ) {
-        return this.module.findUnique({
-            where: { id },
-            include: {
-                dayModules: true,
-            },
-        });
+    async findAll() {
+        return await this.#filterModules();
+    }
+
+
+    async findOne( id: number ) {
+        return {}
+        // return ( await this.#filterModules()).find( module => module.id === id );
     }
 
 
     async update( id: number, updateModuleDto: UpdateModuleDto ) {
         try {
-            const { dayCodes, ...data } = updateModuleDto;
+            const { dayIds, ...data } = updateModuleDto;
 
             const module = await this.module.update({
                 where: { id },
                 data,
             });
 
-            if ( dayCodes ) {
+            if ( dayIds ) {
                 await this.dayModule.deleteMany({
                     where: { moduleId: id },
                 });
 
                 await this.dayModule.createMany({
-                    data: dayCodes.map(dayCode => ({
+                    data: dayIds.map(dayId => ({
                         moduleId: id,
-                        dayCode,
+                        dayId,
                     })),
                 });
             }
