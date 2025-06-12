@@ -71,7 +71,7 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
                 },
                 dayModule: {
                     select : {
-                        dayCode: true,
+                        dayId: true,
                         moduleId: true,
                     }
                 },
@@ -110,7 +110,7 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
             chairsAvailable         : section.chairsAvailable,
             room                    : section.room.id,
             professor               : section.professor?.name ?? 'Sin profesor',
-            day                     : Number( section.dayModule.dayCode ),
+            day                     : Number( section.dayModule.dayId ),
             moduleId                : section.dayModule.moduleId.toString(),
             subjectName             : section.subjectSections[0].subject.name,
             subjectId               : section.subjectSections[0].subject.id,
@@ -434,7 +434,7 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
                 plannedBuilding         : row.Edificio,
                 chairsAvailable         : row.SillasDisp,
                 roomId                  : row.Sala,
-                dayModuleId             : dayModules.find( dm => Number(dm.dayCode) === row.Dia && dm.moduleId === row.Modulo )?.id || 1,
+                dayModuleId             : dayModules.find( dm => dm.dayId === row.Dia && dm.moduleId === row.Modulo )?.id || 1,
                 professorId             : row.ProfesorId?.toString() || null,
             });
 
