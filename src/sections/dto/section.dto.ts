@@ -78,7 +78,14 @@ export class SectionDto {
         description: 'The professor teaching the section.',
         example: 'Dr. Smith',
     })
-    professor: string;
+    professorName: string;
+
+
+    @ApiProperty({
+        description: 'The ID of the professor teaching the section.',
+        example: 'clx15746g000008l3f1z9h8y7',
+    })
+    professorId: string;
 
 
     @ApiProperty({
