@@ -75,7 +75,7 @@ model SubjectSection {
     periodId    String
 
     subject     Subject @relation(fields: [subjectId], references: [id])
-    section     Section @relation(fields: [sectionId], references: [id])
+    section     Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
     period      Period @relation(fields: [periodId], references: [id])
 
     @@id([subjectId, sectionId, periodId])
