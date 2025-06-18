@@ -25,8 +25,8 @@ import { CreateSectionDto }     from '@sections/dto/create-section.dto';
 import { UpdateSectionDto }     from '@sections/dto/update-section.dto';
 import { SectionDto }           from '@sections/dto/section.dto';
 
-@ApiTags('sections')
-@Controller('sections')
+@ApiTags( 'Sections' )
+@Controller( 'Sections' )
 export class SectionsController {
     constructor(private readonly sectionsService: SectionsService) {}
 
@@ -84,13 +84,18 @@ export class SectionsController {
         return this.sectionsService.findOne(id);
     }
 
+
     @Patch(':id')
     @ApiOperation({ summary: 'Update a section' })
     @ApiResponse({ status: 200, description: 'The section has been successfully updated.' })
     @ApiResponse({ status: 404, description: 'Section not found' })
-    update(@Param('id') id: string, @Body() updateSectionDto: UpdateSectionDto) {
-        return this.sectionsService.update(id, updateSectionDto);
+    update(
+        @Param('id') id: string,
+        @Body() updateSectionDto: UpdateSectionDto
+    ) {
+        return this.sectionsService.update( id, updateSectionDto );
     }
+
 
     @Delete(':id')
     @ApiOperation({ summary: 'Delete a section' })
