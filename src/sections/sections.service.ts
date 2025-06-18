@@ -31,11 +31,19 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
 
     async create( createSectionDto: CreateSectionDto ) {
         try {
-            const section = await this.section.create({
+
+            const { periodId, subjectId, ...rest } = createSectionDto;
+            const data = { id: uuidv7(), ...rest };
+            const section = await this.section.create({ data });
+
+            if ( !section ) throw new BadRequestException( 'Error creating section' );
+
+            await this.subjectSection.create({
                 data: {
-                    id: uuidv7(),
-                    ...createSectionDto,
-                },
+                    sectionId: section.id,
+                    subjectId,
+                    periodId,
+                }
             });
 
             return section;
@@ -78,6 +86,7 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
                 professor: {
                     select : {
                         name: true,
+                        id: true,
                     }
                 },
                 subjectSections: {
@@ -109,7 +118,8 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
             plannedBuilding         : section.plannedBuilding,
             chairsAvailable         : section.chairsAvailable,
             room                    : section.room.id,
-            professor               : section.professor?.name ?? 'Sin profesor',
+            professorName           : section.professor?.name ?? 'Sin profesor',
+            professorId             : section.professor?.id ?? 'Sin profesor',
             day                     : Number( section.dayModule.dayId ),
             moduleId                : section.dayModule.moduleId.toString(),
             subjectName             : section.subjectSections[0].subject.name,
