@@ -1,4 +1,6 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateSectionDto } from './create-section.dto';
+import { PartialType }  from '@nestjs/swagger';
 
-export class UpdateSectionDto extends PartialType(CreateSectionDto) {}
+import { BasicSectionDto } from './basic-section.dto';
+
+
+export class UpdateSectionDto extends PartialType( BasicSectionDto ) {}
