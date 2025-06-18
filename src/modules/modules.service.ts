@@ -51,7 +51,8 @@ export class ModulesService extends PrismaClient implements OnModuleInit {
                 order       : true,
                 dayModules  : {
                     select: {
-                        dayId: true,
+                        dayId   : true,
+                        id      : true
                     },
                     orderBy: {
                         dayId: 'asc',
@@ -65,9 +66,11 @@ export class ModulesService extends PrismaClient implements OnModuleInit {
 
             return dayModules.map( dayModule => ({
                 ...rest,
+                // id      : rest.id,
                 id      : `${rest.id}${rest.difference? `-${rest.difference}` : ''}`,
                 name    : `M${rest.code}:${dayModule.dayId}${rest.difference? `-${rest.difference}` : ''}`,
-                dayId   : dayModule.dayId
+                dayId   : dayModule.dayId,
+                dayModuleId: dayModule.id
             }));
         });
     }
