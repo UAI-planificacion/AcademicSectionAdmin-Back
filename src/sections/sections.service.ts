@@ -29,24 +29,102 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
 	}
 
 
+    #selectSection = {
+        id: true,
+        code: true,
+        session: true,
+        size: true,
+        correctedRegistrants: true,
+        realRegistrants: true,
+        plannedBuilding: true,
+        chairsAvailable: true,
+        room: {
+            select : {
+                id: true
+            }
+        },
+        dayModule: {
+            select : {
+                dayId: true,
+                moduleId: true,
+                module: {
+                    select: {
+                        difference: true,
+                    }
+                }
+            }
+        },
+        professor: {
+            select : {
+                name: true,
+                id: true,
+            }
+        },
+        subjectSections: {
+            select: {
+                subject: {
+                    select: {
+                        id: true,
+                        name: true,
+                    }
+                },
+                period: {
+                    select: {
+                        id: true,
+                        name: true,
+                    }
+                }
+            }
+        }
+    }
+
+
+    #convertToSectionDto( section: any ): SectionDto {
+        return {
+            id                      : section.id,
+            code                    : section.code,
+            session                 : section.session,
+            size                    : section.size,
+            correctedRegistrants    : section.correctedRegistrants,
+            realRegistrants         : section.realRegistrants,
+            plannedBuilding         : section.plannedBuilding,
+            chairsAvailable         : section.chairsAvailable,
+            room                    : section.room.id,
+            professorName           : section.professor?.name ?? 'Sin profesor',
+            professorId             : section.professor?.id ?? 'Sin profesor',
+            day                     : Number( section.dayModule.dayId ),
+            moduleId                : `${section.dayModule.moduleId}${section.dayModule.module.difference ? `-${section.dayModule.module.difference}`: ''}`,
+            subjectName             : section.subjectSections[0].subject.name,
+            subjectId               : section.subjectSections[0].subject.id,
+            period                  : `${section.subjectSections[0].period.id}-${section.subjectSections[0].period.name}`,
+        };
+    }
+
+
     async create( createSectionDto: CreateSectionDto ) {
         try {
-
             const { periodId, subjectId, ...rest } = createSectionDto;
             const data = { id: uuidv7(), ...rest };
-            const section = await this.section.create({ data });
+            const newSection = await this.section.create({ data });
 
-            if ( !section ) throw new BadRequestException( 'Error creating section' );
+            if ( !newSection ) throw new BadRequestException( 'Error creating section' );
 
             await this.subjectSection.create({
                 data: {
-                    sectionId: section.id,
+                    sectionId: newSection.id,
                     subjectId,
                     periodId,
                 }
             });
 
-            return section;
+            const section = await this.section.findUnique({
+                where : { id: newSection.id },
+                select: this.#selectSection
+            });
+
+            if ( !section ) throw new BadRequestException( 'Error creating section' );
+
+            return this.#convertToSectionDto( section );
         } catch ( error ) {
             console.error( 'Error creating section:', error );
             throw error;
@@ -63,69 +141,10 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
                     },
                 }
             },
-            select: {
-                id: true,
-                code: true,
-                session: true,
-                size: true,
-                correctedRegistrants: true,
-                realRegistrants: true,
-                plannedBuilding: true,
-                chairsAvailable: true,
-                room: {
-                    select : {
-                        id: true
-                    }
-                },
-                dayModule: {
-                    select : {
-                        dayId: true,
-                        moduleId: true,
-                    }
-                },
-                professor: {
-                    select : {
-                        name: true,
-                        id: true,
-                    }
-                },
-                subjectSections: {
-                    select: {
-                        subject: {
-                            select: {
-                                id: true,
-                                name: true,
-                            }
-                        },
-                        period: {
-                            select: {
-                                id: true,
-                                name: true,
-                            }
-                        }
-                    }
-                }
-            }
+            select: this.#selectSection
         });
 
-        return sections.map( section => ({
-            id                      : section.id,
-            code                    : section.code,
-            session                 : section.session,
-            size                    : section.size,
-            correctedRegistrants    : section.correctedRegistrants,
-            realRegistrants         : section.realRegistrants,
-            plannedBuilding         : section.plannedBuilding,
-            chairsAvailable         : section.chairsAvailable,
-            room                    : section.room.id,
-            professorName           : section.professor?.name ?? 'Sin profesor',
-            professorId             : section.professor?.id ?? 'Sin profesor',
-            day                     : Number( section.dayModule.dayId ),
-            moduleId                : section.dayModule.moduleId.toString(),
-            subjectName             : section.subjectSections[0].subject.name,
-            subjectId               : section.subjectSections[0].subject.id,
-            period                  : `${section.subjectSections[0].period.id}-${section.subjectSections[0].period.name}`,
-        }));
+        return sections.map( section => this.#convertToSectionDto( section ));
     }
 
 
@@ -148,12 +167,17 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
 
     async update( id: string, updateSectionDto: UpdateSectionDto ) {
         try {
-            const section = await this.section.update({
+            const sectionUpdated = await this.section.update({
                 where: { id },
                 data: updateSectionDto,
             });
 
-            return section;
+            const section = await this.section.findUnique({
+                where : { id: sectionUpdated.id },
+                select: this.#selectSection
+            });
+
+            return this.#convertToSectionDto( section );
         } catch ( error ) {
             console.error( 'Error updating section:', error );
             throw error;
