@@ -19,6 +19,11 @@ export class ModulesController {
         return this.modulesService.create(createModuleDto);
     }
 
+    @Get( 'original' )
+    findAllModules() {
+        return this.modulesService.findAllModules();
+    }
+
 
     @Get()
     findAll() {
