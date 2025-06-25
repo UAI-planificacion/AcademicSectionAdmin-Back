@@ -1,9 +1,10 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, Injectable, OnModuleInit } from '@nestjs/common';
 
 import { PrismaClient } from '@prisma/client';
 
 import { PrismaException }  from '@app/config/prisma-catch';
 import { UpdateDayDto }     from '@days/dto/update-day.dto';
+import { CreateDayDto }     from '@days/dto/create-day.dto';
 
 
 @Injectable()
@@ -12,13 +13,32 @@ export class DaysService extends PrismaClient implements OnModuleInit {
         this.$connect();
     }
 
+
+    async create( createDayDto: CreateDayDto ) {
+        try {
+            const findAll = await this.findAll();
+
+            if ( findAll.length >= 7 ) {
+                throw new BadRequestException( 'Only 7 days are allowed' );
+            }
+
+            const day = await this.day.create({ data: createDayDto });
+            return day;
+        } catch (error) {
+            throw PrismaException.catch( error );
+        }
+    }
+
+
     findAll() {
         return this.day.findMany({});
     }
 
+
     findOne( id: number ) {
         return this.day.findUnique({ where: { id } });
     }
+
 
     async update( id: number, updateDayDto: UpdateDayDto ) {
         try {
