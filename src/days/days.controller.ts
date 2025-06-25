@@ -1,12 +1,20 @@
-import { Controller, Get, Body, Patch, Param } from '@nestjs/common';
+import { Controller, Get, Body, Patch, Param, Post } from '@nestjs/common';
 
 import { DaysService }  from '@days/days.service';
 import { UpdateDayDto } from '@days/dto/update-day.dto';
+import { CreateDayDto } from './dto/create-day.dto';
 
 
 @Controller( 'days' )
 export class DaysController {
     constructor( private readonly daysService: DaysService ) {}
+
+    @Post()
+    create(
+        @Body() createDayDto: CreateDayDto
+    ) {
+        return this.daysService.create( createDayDto );
+    }
 
 
     @Get()
