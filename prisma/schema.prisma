@@ -34,6 +34,8 @@ model Day {
 enum ModuleDifference {
     A
     B
+    C
+    D
 }
 
 
@@ -44,7 +46,6 @@ model Module {
     startHour   String
     endHour     String
     isActive    Boolean @default(true)
-    order       Int @default(0)
 
     dayModules  DayModule[]
 
@@ -59,6 +60,7 @@ model DayModule {
     id        Int     @id @default(autoincrement())
     dayId     Int
     moduleId  Int
+    order       Int @default(0)
 
     day       Day    @relation(fields: [dayId], references: [id])
     module    Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
