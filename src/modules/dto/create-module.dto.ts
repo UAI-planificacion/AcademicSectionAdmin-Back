@@ -2,9 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 import {
     IsArray,
-    IsEnum,
     IsNotEmpty,
-    IsOptional,
     IsString,
     Matches,
     ArrayNotEmpty,
@@ -16,7 +14,6 @@ import {
     ValidationOptions,
     ArrayUnique,
 }                   from 'class-validator';
-import { $Enums }   from '@prisma/client';
 
 
 @ValidatorConstraint({ name: 'isEndDateAfterStartDate', async: false })
@@ -57,16 +54,6 @@ export class CreateModuleDto {
     @IsString()
     @IsNotEmpty()
     code: string;
-
-    @ApiProperty({
-        description: 'The difference of the module (e.g., A or B).',
-        example: $Enums.ModuleDifference.A,
-        enum: $Enums.ModuleDifference,
-        required: false,
-    })
-    @IsOptional()
-    @IsEnum($Enums.ModuleDifference)
-    difference?: $Enums.ModuleDifference;
 
     @ApiProperty({
         description: 'The start hour of the module in HH:MM format.',
