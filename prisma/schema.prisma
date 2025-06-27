@@ -34,8 +34,6 @@ model Day {
 enum ModuleDifference {
     A
     B
-    C
-    D
 }
 
 
