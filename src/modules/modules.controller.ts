@@ -1,8 +1,10 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 import { ModulesService }   from '@modules/modules.service';
 import { CreateModuleDto }  from '@modules/dto/create-module.dto';
 import { UpdateModuleDto }  from '@modules/dto/update-module.dto';
+import { CREATE_MODULE_DOC } from './docs/create.doc';
 
 
 @Controller( 'modules' )
@@ -13,10 +15,14 @@ export class ModulesController {
 
 
     @Post()
-    create(
-        @Body() createModuleDto: CreateModuleDto
+    @ApiOperation( CREATE_MODULE_DOC.SUMMARY )
+    @ApiResponse( CREATE_MODULE_DOC.RESPONSE_200 )
+    @ApiResponse( CREATE_MODULE_DOC.RESPONSE_400 )
+    @ApiBody( CREATE_MODULE_DOC.API_BODY )
+    createMany(
+        @Body() createModuleDto: CreateModuleDto[]
     ) {
-        return this.modulesService.create(createModuleDto);
+        return this.modulesService.createMany(createModuleDto);
     }
 
     @Get( 'original' )
