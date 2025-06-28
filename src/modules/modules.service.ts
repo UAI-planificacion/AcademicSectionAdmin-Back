@@ -293,7 +293,7 @@ export class ModulesService extends PrismaClient implements OnModuleInit {
                 await this.#calculateAndSetOrderAndDifference(Array.from(affectedDayIds));
             }
 
-            return module;
+            return await this.findAllModules();
         } catch ( error ) {
             console.error( 'Error updating module:', error );
             throw error;
@@ -309,7 +309,7 @@ export class ModulesService extends PrismaClient implements OnModuleInit {
             });
             const affectedDayIds = existingDayModules.map(dm => dm.dayId);
 
-            const module = await this.module.delete({
+            await this.module.delete({
                 where: { id },
             });
 
@@ -317,7 +317,7 @@ export class ModulesService extends PrismaClient implements OnModuleInit {
                 await this.#calculateAndSetOrderAndDifference(affectedDayIds);
             }
 
-            return module;
+            return await this.findAllModules();
         } catch (error) {
             console.error('Error deleting module:', error);
             throw error;
