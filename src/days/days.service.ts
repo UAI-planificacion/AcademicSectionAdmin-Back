@@ -31,7 +31,11 @@ export class DaysService extends PrismaClient implements OnModuleInit {
 
 
     findAll() {
-        return this.day.findMany({});
+        return this.day.findMany({
+            orderBy: {
+                id: 'asc'
+            }
+        });
     }
 
 
