@@ -125,6 +125,7 @@ model Professor {
     id          String @id
     name        String
     email       String? @unique
+    isMock      Boolean @default(false)
 
     sections    Section[]
 
