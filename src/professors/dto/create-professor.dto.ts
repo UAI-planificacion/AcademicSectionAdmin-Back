@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import {
+    IsBoolean,
     IsEmail,
     IsNotEmpty,
     IsOptional,
@@ -38,5 +39,13 @@ export class CreateProfessorDto {
     @IsOptional()
     @IsEmail()
     email?: string;
+
+    @ApiPropertyOptional({
+        description: 'Indicates whether the professor is a mock professor (e.g., for testing purposes).',
+        example: false,
+    })
+    @IsOptional()
+    @IsBoolean()
+    isMock: boolean = false;
 
 }
