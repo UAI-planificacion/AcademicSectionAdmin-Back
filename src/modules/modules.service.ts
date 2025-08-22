@@ -238,7 +238,7 @@ export class ModulesService extends PrismaClient implements OnModuleInit {
             updatedAt   : module.updatedAt,
             name        : `M${module.code}`,
             days        : module.dayModules.map( dayModule => dayModule.dayId ),
-        }));
+        })).sort(( a, b ) => Number( a.code ) - Number( b.code ));
     }
 
 
