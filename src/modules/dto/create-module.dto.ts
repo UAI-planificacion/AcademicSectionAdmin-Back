@@ -13,35 +13,39 @@ import {
     registerDecorator,
     ValidationOptions,
     ArrayUnique,
-}                   from 'class-validator';
+} from 'class-validator';
 
 
 @ValidatorConstraint({ name: 'isEndDateAfterStartDate', async: false })
 export class IsEndDateAfterStartDateConstraint implements ValidatorConstraintInterface {
-    validate(endDate: string, args: ValidationArguments) {
+    validate( endDate: string, args: ValidationArguments ) {
         const [relatedPropertyName] = args.constraints;
         const startDate = ( args.object as any )[relatedPropertyName];
+
         if ( !startDate || !endDate ) {
-            return true; 
+            return true;
         }
 
         return endDate > startDate;
     }
 
-    defaultMessage(args: ValidationArguments) {
+    defaultMessage( args: ValidationArguments ) {
         const [relatedPropertyName] = args.constraints;
         return `endHour must be after ${relatedPropertyName}.`;
     }
 }
 
-export function IsEndDateAfterStartDate(property: string, validationOptions?: ValidationOptions) {
-    return function (object: Object, propertyName: string) {
+export function IsEndDateAfterStartDate(
+    property: string,
+    validationOptions?: ValidationOptions
+): ( object: Object, propertyName: string ) => void {
+    return function ( object: Object, propertyName: string ) {
         registerDecorator({
-            target: object.constructor,
-            propertyName: propertyName,
-            options: validationOptions,
-            constraints: [property],
-            validator: IsEndDateAfterStartDateConstraint,
+            target          : object.constructor,
+            propertyName    : propertyName,
+            options         : validationOptions,
+            constraints     : [property],
+            validator       : IsEndDateAfterStartDateConstraint,
         });
     };
 }
@@ -92,4 +96,5 @@ export class CreateModuleDto {
     @IsNotEmpty({ each: true })
     @ArrayUnique()
     dayIds: number[];
+
 }
