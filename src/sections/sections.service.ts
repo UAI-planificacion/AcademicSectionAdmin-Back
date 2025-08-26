@@ -152,17 +152,34 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
         return await this.#getSectionData();
     }
 
-    async findOne( id: string ) {
-        try {
-            const section = await this.section.findUnique({
-                where: { id },
-            });
 
-            return section;
-        } catch ( error ) {
-            console.error( 'Error finding section:', error );
-            throw error;
-        }
+    async findAllBySubjectId( subjectId: string ) {
+        const sections = await this.section.findMany({
+            where: {
+                dayModule: {
+                    module: {
+                        isActive: true,
+                    },
+                },
+                subjectSections: {
+                    some : {
+                        subjectId
+                    }
+                }
+            },
+            select: this.#selectSection
+        });
+
+        return sections.map( section => this.#convertToSectionDto( section ));
+    }
+
+
+    async findOne( id: string ) {
+        const section = await this.section.findUnique({
+            where: { id },
+        });
+
+        return section;
     }
 
     async update( id: string, updateSectionDto: UpdateSectionDto ) {
