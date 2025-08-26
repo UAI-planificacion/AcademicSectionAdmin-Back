@@ -83,7 +83,7 @@ model SubjectSection {
 
 
 model Subject {
-    id        String @id
+    id          String @id
     name        String
     startDate   DateTime
     endDate     DateTime?
