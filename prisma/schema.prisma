@@ -55,9 +55,9 @@ model Module {
 
 
 model DayModule {
-    id        Int     @id @default(autoincrement())
-    dayId     Int
-    moduleId  Int
+    id          Int @id @default(autoincrement())
+    dayId       Int
+    moduleId    Int
     order       Int @default(0)
 
     day       Day    @relation(fields: [dayId], references: [id])
