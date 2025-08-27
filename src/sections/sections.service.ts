@@ -19,10 +19,19 @@ import { SpaceType }            from '@sections/enums/space-type.enum';
 import { Building }             from '@sections/enums/building.enum';
 import { SizeEnum }             from '@sections/enums/size.enum';
 import { SectionDto }           from '@sections/dto/section.dto';
+import { SubjectResponse, SubjectsService }      from '@sections/services/subjects.service';
+import { PrismaException }      from '@config/prisma-catch';
 
 
 @Injectable()
 export class SectionsService extends PrismaClient implements OnModuleInit {
+
+	constructor(
+        private readonly subjectsService: SubjectsService
+    ) {
+		super();
+	}
+
 
     onModuleInit() {
 		this.$connect();
@@ -30,24 +39,24 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
 
 
     #selectSection = {
-        id: true,
-        code: true,
-        session: true,
-        size: true,
-        correctedRegistrants: true,
-        realRegistrants: true,
-        plannedBuilding: true,
-        chairsAvailable: true,
-        room: {
+        id                      : true,
+        code                    : true,
+        session                 : true,
+        size                    : true,
+        correctedRegistrants    : true,
+        realRegistrants         : true,
+        plannedBuilding         : true,
+        chairsAvailable         : true,
+        room                    : {
             select : {
                 id: true
             }
         },
         dayModule: {
             select : {
-                dayId: true,
-                moduleId: true,
-                module: {
+                dayId       : true,
+                moduleId    : true,
+                module      : {
                     select: {
                         difference: true,
                     }
@@ -56,22 +65,22 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
         },
         professor: {
             select : {
-                name: true,
-                id: true,
+                id      : true,
+                name    : true,
             }
         },
         subjectSections: {
             select: {
                 subject: {
                     select: {
-                        id: true,
-                        name: true,
+                        id      : true,
+                        name    : true,
                     }
                 },
                 period: {
                     select: {
-                        id: true,
-                        name: true,
+                        id      : true,
+                        name    : true,
                     }
                 }
             }
@@ -79,7 +88,7 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
     }
 
 
-    #convertToSectionDto( section: any ): SectionDto {
+    #convertToSectionDto( section: any, subject: SubjectResponse ): SectionDto {
         return {
             id                      : section.id,
             code                    : section.code,
@@ -90,12 +99,14 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
             plannedBuilding         : section.plannedBuilding,
             chairsAvailable         : section.chairsAvailable,
             room                    : section.room.id,
-            professorName           : section.professor?.name ?? 'Sin profesor',
-            professorId             : section.professor?.id ?? 'Sin profesor',
+            professorName           : section.professor?.name   ?? 'Sin profesor',
+            professorId             : section.professor?.id     ?? 'Sin profesor',
             day                     : Number( section.dayModule.dayId ),
             moduleId                : `${section.dayModule.moduleId}${section.dayModule.module.difference ? `-${section.dayModule.module.difference}`: ''}`,
-            subjectName             : section.subjectSections[0].subject.name,
-            subjectId               : section.subjectSections[0].subject.id,
+            // subjectName             : section.subjectSections[0].subject.name,
+            // subjectId               : section.subjectSections[0].subject.id,
+            subjectName             : subject.name,
+            subjectId               : subject.id,
             period                  : `${section.subjectSections[0].period.id}-${section.subjectSections[0].period.name}`,
         };
     }
@@ -124,10 +135,13 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
 
             if ( !section ) throw new BadRequestException( 'Error creating section' );
 
-            return this.#convertToSectionDto( section );
+
+            const subject = await this.subjectsService.getSubjectById(  section.subjectSections[0].subject.id );
+
+            return this.#convertToSectionDto( section, subject );
         } catch ( error ) {
             console.error( 'Error creating section:', error );
-            throw error;
+            throw PrismaException.catch( error, 'Failed to create section' );
         }
     }
 
@@ -144,7 +158,13 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
             select: this.#selectSection
         });
 
-        return sections.map( section => this.#convertToSectionDto( section ));
+        const subjectIds    = sections.flatMap( section => section.subjectSections.map( ss => ss.subject.id ));
+        const subjects      = await this.subjectsService.getSubjectsByIds( subjectIds );
+
+        return sections.map( section => {
+            const subject = subjects.find( s => s.id === section.subjectSections[0].subject.id );
+            return this.#convertToSectionDto( section, subject! )
+        });
     }
 
 
@@ -170,7 +190,9 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
             select: this.#selectSection
         });
 
-        return sections.map( section => this.#convertToSectionDto( section ));
+        const subject = await this.subjectsService.getSubjectById( subjectId );
+
+        return sections.map( section => this.#convertToSectionDto( section, subject! ));
     }
 
 
@@ -194,10 +216,14 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
                 select: this.#selectSection
             });
 
-            return this.#convertToSectionDto( section );
+            if ( !section ) throw new BadRequestException( 'Error updating section' );
+
+            const subject = await this.subjectsService.getSubjectById( section.subjectSections[0].subject.id );
+
+            return this.#convertToSectionDto( section, subject! );
         } catch ( error ) {
             console.error( 'Error updating section:', error );
-            throw error;
+            throw PrismaException.catch( error, 'Failed to update section' );
         }
     }
 
@@ -210,7 +236,7 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
             return section;
         } catch ( error ) {
             console.error( 'Error deleting section:', error );
-            throw error;
+            throw PrismaException.catch( error, 'Failed to delete section' );
         }
     }
 
@@ -378,8 +404,8 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
         dbSearchKey : string,
         mapper: ( entity: TInputEntity ) => any
     ): Promise<any> {
-        const uniqueKeysInExcel = entities.map( e => e[ uniqueKey ]) as Array<string | number | boolean>;
-        const existingDbEntities = await prismaModel.findMany({
+        const uniqueKeysInExcel     = entities.map( e => e[ uniqueKey ]) as Array<string | number | boolean>;
+        const existingDbEntities    = await prismaModel.findMany({
             where: {
                 [dbSearchKey]: {
                     in: uniqueKeysInExcel,
@@ -415,7 +441,7 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
 
         const uniqueRoomsMap       = new Map<string, RoomData>();
         const uniqueProfessorsMap  = new Map<string, ProfessorData>();
-        const uniqueSubjectsMap    = new Map<string, SubjectData>();
+        // const uniqueSubjectsMap    = new Map<string, SubjectData>();
         const uniquePeriodsMap     = new Map<string, PeriodData>();
 
         const sectionList   : Section[] = [];
@@ -434,7 +460,6 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
         for ( const row of rawData ) {
             // Rooms
             const roomName = row.Sala?.trim();
-
             if ( roomName && !uniqueRoomsMap.has( roomName )) {
                 uniqueRoomsMap.set( roomName, {
                     id        : roomName,
@@ -455,14 +480,14 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
             }
 
             // Subjects
-            const subjectCode = row.Sigla?.trim();
-            if ( subjectCode && !uniqueSubjectsMap.has( subjectCode )) {
-                uniqueSubjectsMap.set( subjectCode, {
-                    id          : subjectCode,
-                    name        : row.NombreAsignatura?.trim(),
-                    startDate   : new Date(row.FechaInicio),
-                });
-            }
+            // const subjectCode = row.Sigla?.trim();
+            // if ( subjectCode && !uniqueSubjectsMap.has( subjectCode )) {
+            //     uniqueSubjectsMap.set( subjectCode, {
+            //         id          : subjectCode,
+            //         name        : row.NombreAsignatura?.trim(),
+            //         startDate   : new Date( row.FechaInicio ),
+            //     });
+            // }
 
             // Periods
             const periodName = `${row.PeriodoAcademicoId}-${row.TipoPeriodo?.trim()}`;
@@ -475,6 +500,7 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
 
             // Sections
             const sectionId = uuidv7();
+
             sectionList.push({
                 id                      : sectionId,
                 code                    : row['Sec.'],
@@ -492,9 +518,9 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
             // SSEC
             ssecList.push({
                 sectionId,
-                subjectId: row.Sigla?.trim(),
-                periodId: row.PeriodoAcademicoId.toString(),
-            })
+                subjectId   : row.Sigla?.trim(),
+                periodId    : row.PeriodoAcademicoId.toString(),
+            });
         }
 
         const newRoomsToCreate = await this.#getNewEntitiesToCreate(
@@ -545,21 +571,21 @@ export class SectionsService extends PrismaClient implements OnModuleInit {
             await this.period.createMany({ data: newPeriodsToCreate, skipDuplicates: true });
         }
 
-        const newSubjectsToCreate = await this.#getNewEntitiesToCreate(
-            Array.from( uniqueSubjectsMap.values() ),
-            'id',
-            this.subject,
-            'id',
-            (sData: SubjectData) => ({
-                id          : sData.id,
-                name        : sData.name,
-                startDate   : sData.startDate,
-            })
-        );
+        // const newSubjectsToCreate = await this.#getNewEntitiesToCreate(
+        //     Array.from( uniqueSubjectsMap.values() ),
+        //     'id',
+        //     this.subject,
+        //     'id',
+        //     (sData: SubjectData) => ({
+        //         id          : sData.id,
+        //         name        : sData.name,
+        //         startDate   : sData.startDate,
+        //     })
+        // );
 
-        if ( newSubjectsToCreate.length > 0 ) {
-            await this.subject.createMany({ data: newSubjectsToCreate, skipDuplicates: true });
-        }
+        // if ( newSubjectsToCreate.length > 0 ) {
+        //     await this.subject.createMany({ data: newSubjectsToCreate, skipDuplicates: true });
+        // }
 
         if ( sectionList.length > 0 ) {
             const inserted = await this.section.createMany({ data: sectionList, skipDuplicates: true });
